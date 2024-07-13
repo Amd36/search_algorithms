@@ -1,4 +1,7 @@
-from collections import deque
+import heapq
+import networkx as nx
+import matplotlib.pyplot as plt
+from collections import deque, defaultdict
 
 class Queue:
     def __init__(self):
@@ -10,7 +13,7 @@ class Queue:
 
     def enqueue(self, element):
         self.elements.append(element)
-        self.size+=1
+        self.size += 1
 
     def dequeue(self):
         if not self.elements:
@@ -27,34 +30,11 @@ class Queue:
     def show(self):
         print(self.elements)
 
-class Graph:
-    def __init__(self, nodes):
-        from collections import defaultdict
-        self.graph = defaultdict(list)
-        for i in nodes:
-            self.graph[i] = []
-
-    def get_graph(self):
-        return dict(self.graph)
-
-    def add_edge(self, start, end, cost):
-        if (start not in self.graph) and (end not in self.graph):
-            print("Both nodes are not found in graph")
-        elif start not in self.graph:
-            print(start + " not found in graph")
-        elif end not in self.graph:
-            print(end + " not found in graph")
-        else:
-            self.graph[start].append((end, cost))
-
-    def add_vertex(self, vertex):
-        self.graph[vertex] = []
-
 class MinHeap(Queue):  # Inherits from Queue for enqueue and dequeue operations
     def heapify_up(self, index):
         parent_index = (index - 1) // 2
 
-        #compares the cost of child with its parent, if less than swaps; loops until root node is reached
+        # Compares the cost of child with its parent, if less than swaps; loops until root node is reached
         while index > 0 and self.elements[index][1] < self.elements[parent_index][1]:
             # Swap elements if the current element is greater than its parent
             self.elements[index], self.elements[parent_index] = self.elements[parent_index], self.elements[index]
@@ -67,7 +47,7 @@ class MinHeap(Queue):  # Inherits from Queue for enqueue and dequeue operations
         right_child_index = 2 * index + 2
         smallest = index
 
-        #compares the cost of the parent with its child, if less then swaps
+        # Compares the cost of the parent with its child, if less then swaps
         if left_child_index < n and self.elements[left_child_index][1] < self.elements[smallest][1]:
             smallest = left_child_index
 
@@ -97,7 +77,7 @@ class MinHeap(Queue):  # Inherits from Queue for enqueue and dequeue operations
         self.heapify_down(0)
         return min_value
 
-#return the path from the parent dictionary
+# Return the path from the parent dictionary
 def return_path(dict, source, goal):
     if goal == source:
         return [goal]
@@ -107,103 +87,108 @@ def return_path(dict, source, goal):
         return path
 
 def UCS_path(graph, source, goal):
-    from collections import defaultdict
     heap = MinHeap()
     cost = defaultdict(list)
     parent = defaultdict(list)
     visited = []
-    # queue = Queue()
-    for i in graph:
+    for i in graph.nodes:
         parent[i] = None 
-        cost[i] = 100000 #initialize the cost of each node to infinity
-    heap.insert((source,0))
+        cost[i] = float('inf')  # Initialize the cost of each node to infinity
+    heap.insert((source, 0))
 
     while heap:
         node = heap.extract_min()
 
-        # print(f"visited = {visited}")
-        # for i in parent:
-        #     print(f"parent[{i}] = {parent[i]}")
-
         if node[0] == goal:
-            return (return_path(parent, 'a', 'z'), cost[goal])
+            return (return_path(parent, source, goal), cost[goal])
 
         if node[0] not in visited:
-            #update the visited list
             visited.append(node[0])
 
-            #insert the adjacent vertices to the heap
-            for i in graph[node[0]]:
-                #Calculate cost
-                g = i[1] + node[1]
+            for neighbor in graph.neighbors(node[0]):
+                g = graph[node[0]][neighbor]['weight'] + node[1]
 
-                #check the cost and update the parent list
-                if g<=cost[i[0]]:
-                    parent[i[0]] = node[0]
-                    cost[i[0]] = g
+                if g <= cost[neighbor]:
+                    parent[neighbor] = node[0]
+                    cost[neighbor] = g
 
-                #Insert into the fringe
-                heap.insert((i[0], g))
+                heap.insert((neighbor, g))
 
 def UCS_traversal(graph, source, goal):
-    from collections import defaultdict
     heap = MinHeap()
     cost = defaultdict(list)
     traversal = []
     visited = []
-    # queue = Queue()
-    for i in graph:
-        cost[i] = 100000 #initialize the cost of each node to infinity
-    heap.insert((source,0))
+    for i in graph.nodes:
+        cost[i] = float('inf')  # Initialize the cost of each node to infinity
+    heap.insert((source, 0))
 
     while heap:
         node = heap.extract_min()
         traversal.append(node[0])
-        # print(f"visited = {visited}")
 
         if node[0] == goal:
             return traversal
 
         if node[0] not in visited:
-            #update the visited list
             visited.append(node[0])
 
-            #insert the adjacent vertices to the heap
-            for i in graph[node[0]]:
-                #Calculate cost
-                g = i[1] + node[1]
+            for neighbor in graph.neighbors(node[0]):
+                g = graph[node[0]][neighbor]['weight'] + node[1]
 
-                #check the cost and update the parent list
-                if g<=cost[i[0]]:
-                    cost[i[0]] = g
+                if g <= cost[neighbor]:
+                    cost[neighbor] = g
 
-                #Insert into the fringe
-                heap.insert((i[0], g))
-
+                heap.insert((neighbor, g))
 
 if __name__ == "__main__":
+    # Define nodes and edges for the graph
     nodes = ['a', 'b', 'c', 'd', 'e', 'f', 'z']
+    edges = [
+        ('a', 'b', 4),
+        ('a', 'c', 3),
+        ('b', 'a', 4),
+        ('b', 'e', 12),
+        ('b', 'f', 5),
+        ('c', 'a', 3),
+        ('c', 'd', 7),
+        ('c', 'e', 10),
+        ('d', 'c', 7),
+        ('d', 'e', 2),
+        ('e', 'b', 12),
+        ('e', 'c', 10),
+        ('e', 'd', 2),
+        ('e', 'z', 5),
+        ('f', 'b', 5),
+        ('f', 'z', 16)
+    ]
 
-    graph = Graph(nodes)
+    # Create a networkx graph
+    G = nx.DiGraph()
+    G.add_weighted_edges_from(edges)
 
-    graph.add_edge('a', 'b', 4)
-    graph.add_edge('a', 'c', 3)
-    graph.add_edge('b', 'a', 4)
-    graph.add_edge('b', 'e', 12)
-    graph.add_edge('b', 'f', 5)
-    graph.add_edge('c', 'a', 3)
-    graph.add_edge('c', 'd', 7)
-    graph.add_edge('c', 'e', 10)
-    graph.add_edge('d', 'c', 7)
-    graph.add_edge('d', 'e', 2)
-    graph.add_edge('e', 'b', 12)
-    graph.add_edge('e', 'c', 10)
-    graph.add_edge('e', 'd', 2)
-    graph.add_edge('e', 'z', 5)
-    graph.add_edge('f', 'b', 5)
-    graph.add_edge('f', 'z', 16)
+    # Run UCS to find the least-cost path from 'a' to 'z'
+    path, cost = UCS_path(G, 'a', 'z')
 
-    graph = graph.get_graph()
+    # Print the result
+    print(f"Path: {path}")
+    print(f"Cost: {cost}")
 
-    print(UCS_traversal(graph, 'a', 'z'))
-    print(UCS_path(graph, 'a', 'z'))
+    # Draw the graph
+    pos = nx.spring_layout(G)
+
+    # Draw nodes and edges
+    nx.draw(G, pos, with_labels=True, node_size=700, node_color='lightblue', font_size=10, font_weight='bold', arrows=True)
+
+    # Draw edge labels (weights)
+    edge_labels = nx.get_edge_attributes(G, 'weight')
+    nx.draw_networkx_edge_labels(G, pos, edge_labels=edge_labels)
+
+    # Highlight the path
+    if path:
+        path_edges = list(zip(path, path[1:]))
+        nx.draw_networkx_edges(G, pos, edgelist=path_edges, edge_color='r', width=2)
+
+    # Display the graph with title showing the total cost
+    plt.title(f"Graph for UCS Algorithm (Total Cost: {cost})")
+    plt.show()
